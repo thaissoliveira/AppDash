@@ -29,14 +29,9 @@ Este projeto foi desenvolvido como parte da disciplina **Programação de Dispos
 ```bash
 lib/
 ├── main.dart
-├── screens/
-│   ├── dashboard_screen.dart
-│   └── detail_screen.dart
-├── widgets/
-│   ├── dashboard_card.dart
-│   └── custom_app_bar.dart
-└── theme/
-    └── app_theme.dart
+├── app.dart
+└── screens/
+    └── home_page.dart
 ```
 
 ## 🚀 Como Executar
