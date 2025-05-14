@@ -20,11 +20,9 @@ Este projeto foi desenvolvido como parte da disciplina **Programação de Dispos
 
 ## 📸 Capturas de Tela
 
-> _Adicione imagens reais do app aqui para ilustrar as telas criadas._
-
-| Tela Inicial | Dashboard | Detalhes |
-|--------------|-----------|----------|
-| ![home](screenshots/home.png) | ![dashboard](screenshots/dashboard.png) | ![details](screenshots/details.png) |
+| Dashboard |
+|-----------|
+| ![home](screenshots/home.webp) |
 
 ## 📂 Estrutura do Projeto
 
@@ -47,7 +45,7 @@ lib/
 
 ```bash
 git clone https://github.com/karlaycosta/app_dashborad.git
-cd app_dashborad-main
+cd app_dashborad
 ```
 
 2. **Instale as dependências:**
@@ -79,9 +77,9 @@ Estudantes da disciplina de **Programação de Dispositivos Móveis**, com conhe
 
 ## 💡 Sugestões de Extensões
 
-- Conectar a um backend (Firebase ou API REST)
+- Conectar a um backend (Firebase, Supabase ou API REST)
 - Adicionar animações com `AnimatedContainer` ou `Hero`
-- Utilizar pacotes como `provider` para gerenciamento de estado
+- Utilizar pacotes como `qr_flutter` para renderização de QR Code
 
 ## 📄 Licença
 
