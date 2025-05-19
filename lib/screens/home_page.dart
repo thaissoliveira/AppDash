@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+// Get a reference your Supabase client
+final supabase = Supabase.instance.client;
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -9,6 +13,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int index = 0;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -69,11 +74,30 @@ class _HomePageState extends State<HomePage> {
           ),
           Expanded(
             child: SingleChildScrollView(
-              child: Wrap(
-                children: [
-                  for (int i = 0; i < 15; i++) InfoCard(title: '${10 * i}'),
-                ],
+              child: FutureBuilder(
+                future: supabase.from('professores').select(),
+                builder: (context, snapshot) {
+                  if (snapshot.hasError) {
+                    return Center(child: Text('${snapshot.error}'));
+                  }
+                  if (snapshot.hasData == false) {
+                    return Center(child: CircularProgressIndicator());
+                  }
+
+                  final data = snapshot.data ?? [];
+                  return Wrap(
+                    children: [
+                      for (final prof in data) InfoCard(title: prof['nome'], subTitle: prof['siape'],),
+                    ],
+                  );
+                },
               ),
+
+              // child: Wrap(
+              //   children: [
+              //     //for (int i = 0; i < 15; i++) InfoCard(title: '${10 * i}'),
+              //   ],
+              // ),
             ),
           ),
         ],
@@ -145,7 +169,7 @@ class InfoCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               title,
-              style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
+              style: const TextStyle(/*fontSize: 48,*/ fontWeight: FontWeight.bold),
             ),
             Text(
               subTitle,
