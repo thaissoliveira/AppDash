@@ -74,21 +74,24 @@ class _HomePageState extends State<HomePage> {
           ),
           Expanded(
             child: SingleChildScrollView(
-              child: FutureBuilder(
-                future: supabase.from('professores').select(),
+              child: StreamBuilder(
+                stream: supabase
+                    .from('professores')
+                    .stream(primaryKey: ['professor_id']),
                 builder: (context, snapshot) {
-                  if (snapshot.hasError) {
-                    return Center(child: Text('${snapshot.error}'));
-                  }
-                  if (snapshot.hasData == false) {
-                    return Center(child: CircularProgressIndicator());
-                  }
-
-                  final data = snapshot.data ?? [];
-                  return Wrap(
-                    children: [
-                      for (final prof in data) InfoCard(title: prof['nome'], subTitle: prof['siape'],),
-                    ],
+                  return snapshot.when(
+                    data: (data) {
+                      final data123 = snapshot.data ?? [];
+                      return Wrap(
+                        children: [
+                          for (final prof in data123)
+                            InfoCard(
+                              title: prof['nome'],
+                              subTitle: prof['siape'],
+                            ),
+                        ],
+                      );
+                    },
                   );
                 },
               ),
@@ -104,6 +107,20 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+}
+
+extension AsyncSnapshotWhen<T> on AsyncSnapshot<T> {
+  Widget when({
+    required Widget Function(T? data) data,
+    Widget Function(Object? e, StackTrace? s)? error,
+    Widget loading = const Center(child: CircularProgressIndicator.adaptive()),
+  }) => switch (this) {
+    AsyncSnapshot(hasError: true) =>
+      error?.call(this.error, stackTrace) ??
+          Center(child: Text('Error!\n${this.error}\n$stackTrace')),
+    AsyncSnapshot(hasData: false) => loading,
+    AsyncSnapshot(data: T? d) => data(d),
+  };
 }
 
 class InfoButton extends StatelessWidget {
@@ -169,7 +186,9 @@ class InfoCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               title,
-              style: const TextStyle(/*fontSize: 48,*/ fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                /*fontSize: 48,*/ fontWeight: FontWeight.bold,
+              ),
             ),
             Text(
               subTitle,
