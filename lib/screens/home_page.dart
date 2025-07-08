@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-
-// Get a reference your Supabase client
-final supabase = Supabase.instance.client;
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -12,115 +10,135 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  int index = 0;
+  List<dynamic> allUsers = [];
+  List<dynamic> filteredUsers = [];
+  final TextEditingController searchController = TextEditingController();
+
+  void initState() {
+    super.initState();
+    fetchUsers();
+    searchController.addListener(onSearchTextChanged);
+  }
+
+  Future<void> fetchUsers() async {
+    final uri = Uri.parse('https://ifpaserver.org:4443/usuarios');
+    final response = await http.get(uri);
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      setState(() {
+        allUsers = data;
+        filteredUsers = data;
+      });
+    } else {
+      // Erro ao buscar os dados
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Erro ao carregar usuários')));
+    }
+  }
+
+  void onSearchTextChanged() {
+    final query = searchController.text.toLowerCase();
+    setState(() {
+      filteredUsers = allUsers
+          .where((user) =>(user['nome'] ?? '').toString().toLowerCase().contains(query),
+          ).toList();
+    });
+  }
 
   @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
+  }
+
+@override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 350,
-            color: Color(0xffe3f5f5),
+          _buildSidebar(),
+          Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                SizedBox(height: 16),
-                CircleAvatar(
-                  radius: 136,
-                  backgroundColor: Colors.green.shade100,
-                  child: CircleAvatar(
-                    radius: 128,
-                    backgroundImage: AssetImage('assets/images/homem.webp'),
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: TextField(
+                    controller: searchController,
+                    decoration: InputDecoration(
+                      labelText: 'Buscar por nome',
+                      labelStyle: TextStyle(color: Colors.grey),
+                      prefixIcon: Icon(Icons.search, color: Colors.grey),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(color: Colors.grey, width: 1.5),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(
+                          color: Colors.green.shade900,
+                          width: 1.5,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-                SizedBox(height: 8),
-                Text(
-                  'Zé da Manga',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 26,
-                    color: Colors.green.shade900,
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Wrap(
+                      spacing: 41,
+                      children: filteredUsers.map((user) {
+                        return InfoCard(
+                          title: user['nome'] ?? 'Sem nome',
+                          subTitle:
+                              user['matricula']?.toString() ?? 'Sem matrícula',
+                        );
+                      }).toList(),
+                    ),
                   ),
-                ),
-                Divider(),
-                InfoButton(
-                  selected: index == 1,
-                  onTap: () {
-                    setState(() {
-                      index = 1;
-                    });
-                  },
-                ),
-                InfoButton(
-                  selected: index == 2,
-                  onTap: () {
-                    setState(() {
-                      index = 2;
-                    });
-                  },
-                ),
-                InfoButton(
-                  selected: index == 3,
-                  onTap: () {
-                    setState(() {
-                      index = 3;
-                    });
-                  },
                 ),
               ],
-            ),
-          ),
-          Expanded(
-            child: SingleChildScrollView(
-              child: StreamBuilder(
-                stream: supabase
-                    .from('professores')
-                    .stream(primaryKey: ['professor_id']),
-                builder: (context, snapshot) {
-                  return snapshot.when(
-                    data: (data) {
-                      final data123 = snapshot.data ?? [];
-                      return Wrap(
-                        children: [
-                          for (final prof in data123)
-                            InfoCard(
-                              title: prof['nome'],
-                              subTitle: prof['siape'],
-                            ),
-                        ],
-                      );
-                    },
-                  );
-                },
-              ),
-
-              // child: Wrap(
-              //   children: [
-              //     //for (int i = 0; i < 15; i++) InfoCard(title: '${10 * i}'),
-              //   ],
-              // ),
             ),
           ),
         ],
       ),
     );
   }
-}
 
-extension AsyncSnapshotWhen<T> on AsyncSnapshot<T> {
-  Widget when({
-    required Widget Function(T? data) data,
-    Widget Function(Object? e, StackTrace? s)? error,
-    Widget loading = const Center(child: CircularProgressIndicator.adaptive()),
-  }) => switch (this) {
-    AsyncSnapshot(hasError: true) =>
-      error?.call(this.error, stackTrace) ??
-          Center(child: Text('Error!\n${this.error}\n$stackTrace')),
-    AsyncSnapshot(hasData: false) => loading,
-    AsyncSnapshot(data: T? d) => data(d),
-  };
+  Widget _buildSidebar() {
+    return Container(
+      width: 350,
+      color: Color(0xffe3f5f5),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const SizedBox(height: 16),
+          CircleAvatar(
+            radius: 136,
+            backgroundColor: Colors.green.shade100,
+            child: const CircleAvatar(
+              radius: 128,
+              backgroundImage: AssetImage('assets/images/homem.webp'),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Thaís Oliveira',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 26,
+              color: Colors.green.shade900,
+            ),
+          ),
+          const Divider(),
+          InfoButton(selected: true, onTap: () {}),
+          InfoButton(selected: false, onTap: () {}),
+          InfoButton(selected: false, onTap: () {}),
+        ],
+      ),
+    );
+  }
 }
 
 class InfoButton extends StatelessWidget {
@@ -136,7 +154,6 @@ class InfoButton extends StatelessWidget {
         color: selected ? Colors.green.shade200 : null,
         height: 68,
         child: Row(
-          spacing: 16,
           children: [
             if (selected)
               Container(
@@ -145,8 +162,9 @@ class InfoButton extends StatelessWidget {
                 color: Colors.green.shade800,
               )
             else
-              SizedBox(width: 6),
-            Text('data', style: TextStyle(fontSize: 24)),
+              const SizedBox(width: 6),
+            const SizedBox(width: 16),
+            const Text('Menu', style: TextStyle(fontSize: 24)),
           ],
         ),
       ),
@@ -157,47 +175,44 @@ class InfoButton extends StatelessWidget {
 class InfoCard extends StatelessWidget {
   final String title;
   final String subTitle;
-  const InfoCard({
-    super.key,
-    this.subTitle = 'Someente Teste',
-    this.title = '0',
-  });
+  const InfoCard({super.key, this.subTitle = '', this.title = ''});
 
   @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 200,
-      height: 250,
-      child: Card(
-        color: Colors.white,
-        elevation: 3,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const CircleAvatar(
-              backgroundColor: Color(0xffe3f5f5),
-              minRadius: 32,
-              child: Icon(
-                Icons.mail_outline_rounded,
-                size: 32,
-                color: Color(0xff479f9b),
-              ),
+Widget build(BuildContext context) {
+  return SizedBox(
+    width: 260,
+    height: 200,
+    child: Card(
+      color: Colors.white,
+      elevation: 3,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const CircleAvatar(
+            backgroundColor: Color(0xffe3f5f5),
+            minRadius: 32,
+            child: Icon(
+              Icons.person_outline,
+              size: 32,
+              color: Color(0xff479f9b),
             ),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: const TextStyle(
-                /*fontSize: 48,*/ fontWeight: FontWeight.bold,
-              ),
-            ),
-            Text(
-              subTitle,
-              style: const TextStyle(color: Colors.black54),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: 4),
+          Text(
+            subTitle,
+            style: const TextStyle(color: Colors.black54),
+            textAlign: TextAlign.center,
+            // overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ),
-    );
-  }
-}
+    ),
+  );
+} }
